@@ -31,7 +31,9 @@ export default function FileList(props) {
 		const postData = [];
 		const post = [];
 		const commentsData = [];
-		docRef.orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
+
+		docRef.orderBy('timestamp', 'asc').onSnapshot(async (snapshot) => {
+			const waitFor = (ms) => new Promise((r) => setTimeout(r, ms));
 			snapshot.forEach((doc) => {
 				const comments = docRef.doc(`${doc.id}`).collection('comments');
 				comments.onSnapshot((snapshot) => {
@@ -48,7 +50,10 @@ export default function FileList(props) {
 					comments: commentsData,
 				});
 			});
+			await waitFor(500);
+
 			console.log(postData);
+
 			setFilesList(postData);
 		});
 	}, [filesList.length]);
@@ -57,8 +62,10 @@ export default function FileList(props) {
 	const removePost = async (post) => {
 		// const updatedPosts = [...filesList];
 		const index = filesList.indexOf(post);
-		await filesList.splice(index, 1);
-		filesList.length -= 1;
+
+		filesList.splice(index, 1);
+		const waitFor = (ms) => new Promise((r) => setTimeout(r, ms));
+		await waitFor(50);
 		// await setFilesList(updatedPosts);
 	};
 	return (

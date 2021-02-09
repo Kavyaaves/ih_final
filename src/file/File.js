@@ -87,22 +87,23 @@ export default function File(props) {
 		props.file.comments = [];
 	}
 
-	const deleteFile = async (file) => {
+	const deleteFile = async (post) => {
 		await db
 			.collection('posts')
-			.doc(file.id)
+			.doc(post.id)
 			.delete()
 			.then((data) => {
-				props.removeUpdate(file);
+				props.removeUpdate(post);
 			})
 			.catch((err) => {
 				alert(err);
 			});
 		const fileRef = storage.ref('files');
-		file.files.map((file) => {
+		console.log(post);
+		post.files?.map((file) => {
 			console.log(file);
 			fileRef
-				.child(file.filename)
+				.child(`${post.id}${file.filename}`)
 				.delete()
 				.then(() => {
 					console.log('Deleted');
@@ -150,7 +151,7 @@ export default function File(props) {
 							<a
 								href={props.file.files[i].url}
 								target='_blank'
-								download={true}
+								download={props.file.files[i].filename}
 								rel='noreferrer'
 								key={i}>
 								<Typography key={i}>{props.file.files[i].filename}</Typography>

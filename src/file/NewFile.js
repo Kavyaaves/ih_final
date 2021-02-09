@@ -69,7 +69,7 @@ const NewFile = (props) => {
 	const classes = useStyles();
 	const [open, setOpen] = useState(false);
 	const [files, setFiles] = useState([]);
-	const [accfiles, setAccFiles] = useState([]);
+	const [values, setValues] = useState({ accFiles: [] });
 	const [url, setUrl] = useState('');
 	const [urls, setUrls] = useState([]);
 	const [progress, setProgress] = useState([]);
@@ -79,89 +79,84 @@ const NewFile = (props) => {
 	// 	setFiles(event.target.files);
 	// 	console.log(files);
 	// };
-	console.log(props.user);
 
 	// this.loadFiles = this.loadFiles.bind(this);
-	const dropRef = useRef();
+
 	const handleDrop = (acceptedFiles) => {
 		setFiles(acceptedFiles);
 		setFileNames(acceptedFiles.map((file) => file.name));
-		console.log(files);
 	};
 
 	const uploadFile = async (event) => {
 		event.preventDefault();
-		const postid = crypto.randomBytes(16).toString('hex');
-		const fileRef = storage.ref('files');
-		const posts = [];
-		files.forEach((file) => {
-			fileRef
-				.child(file.name)
-				.getMetadata()
-				.then((metadata) => {
-					setOpen(false);
-					alert(`Try changing the name of the file ${metadata.name}`);
-					setAccFiles(null);
-				})
-				.catch((error) => {
-					// acc.push(file);
-					// setAccFiles(...acc);
-					// 	console.log(error);
-					// 	if (!present) {
-					//
-					// 	// setPre(sent(false);
-				});
-		});
+		const acc = [];
 
-		// console.log(accfiles);
-		console.log(accfiles !== null);
-		if (accfiles !== null)
-			files.forEach((file) => {
-				const uploadTask = firebase
-					.storage()
-					.ref(`files/${file.name}`)
-					.put(file);
-				uploadTask.on(
-					'state_changed',
-					(snapshot) => {
-						// progress function ...
-						const progress = Math.round(
-							(snapshot.bytesTransferred / snapshot.totalBytes) * 100
+		// files.map(async (file) => {
+		// 	const fileRef = storage.ref('files');
+		// 	fileRef
+		// 		.child(file.name)
+		// 		.getMetadata()
+		// 		.then((metadata) => {
+		// 			setOpen(false);
+		// 			alert(`Try changing the name of the file ${metadata.name}`);
+		// 		})
+		// 		.catch(() => {
+		// 			acc.push(file);
+		// 		});
+		// });
+		const postid = crypto.randomBytes(16).toString('hex');
+
+		const posts = [];
+		files?.forEach((file) => {
+			const uploadTask = firebase
+				.storage()
+				.ref(`files/${postid}${file.name}`)
+				.put(file);
+			uploadTask.on(
+				'state_changed',
+				(snapshot) => {
+					// progress function ...
+					const progress = Math.round(
+						(snapshot.bytesTransferred / snapshot.totalBytes) * 100
+					);
+					setProgress(progress);
+				},
+				(error) => {
+					// Error function ...
+					alert('Error while uploading files');
+					console.log(error);
+				},
+				() => {
+					// complete function ...
+					const storageRef = firebase
+						.storage()
+						.ref('files')
+						.child(`${postid}${file.name}`);
+					storageRef.getDownloadURL().then((url) => {
+						posts.push({ filename: file.name, url: url });
+						db.doc(`posts/${postid}`).set(
+							{
+								files: [...posts],
+							},
+							{ merge: true }
 						);
-						setProgress(progress);
-					},
-					(error) => {
-						// Error function ...
-						alert('Error while uploading files');
-						console.log(error);
-					},
-					() => {
-						// complete function ...
-						const storageRef = firebase.storage().ref('files').child(file.name);
-						storageRef.getDownloadURL().then((url) => {
-							posts.push({ filename: file.name, url: url });
-							db.doc(`posts/${postid}`).set(
-								{
-									files: [...posts],
-								},
-								{ merge: true }
-							);
-						});
-					}
-				);
-				db.doc(`posts/${postid}`).set(
-					{
-						userId: props.user.uid,
-						label: 'Submitted',
-						username: props.user.displayName,
-						timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-					},
-					{ merge: true }
-				);
-				setProgress(0);
-				setFiles(null);
-				setOpen(true);
-			});
+					});
+				}
+			);
+			console.log(props.user.displayName);
+			db.doc(`posts/${postid}`).set(
+				{
+					userId: props.user.uid,
+					label: 'Submitted',
+					username: props.user.displayName,
+					timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+				},
+				{ merge: true }
+			);
+			setProgress(0);
+			setFiles(null);
+			setOpen(true);
+		});
 	};
 
 	return (
@@ -292,7 +287,7 @@ const NewFile = (props) => {
 				</CardActions>
 			</Card>
 
-			<Dialog open={open && accfiles} disableBackdropClick={true}>
+			<Dialog open={open} disableBackdropClick={true}>
 				<DialogTitle>Paper Submission</DialogTitle>
 				<DialogContent>
 					<DialogContentText>
